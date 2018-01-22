@@ -1,0 +1,115 @@
+
+id,host_id,host_since,host_name,host_response_rate,host_acceptance_rate,neighbourhood_cleansed,city,state,zipcode,country,latitude,longitude,property_type,room_type,accommodates,bathrooms,bedrooms,beds,price,cancellation_policy,weekly_price,monthly_price,security_deposit,cleaning_fee,number_of_reviews,review_scores_rating,instant_bookable,reviews_per_month
+
+
+A1:
+
+data = load '/home/nd/Downloads/cleanNew.csv' Using PigStorage(',') As
+(id:chararray,host_id:chararray,host_since:chararray,host_name:chararray,host_response_rate:chararray,host_acceptance_rate:chararray,neighbourhood_cleansed:chararray,city:chararray,state:chararray,zipcode:chararray,country:chararray,latitude:chararray,longitude:chararray,property_type:chararray,room_type:chararray,accommodates:int,bathrooms:int,bedrooms:int,beds:int,price:int,cancellation_policy:chararray,weekly_price:int,monthly_price:int,security_deposit:int,cleaning_fee:int,number_of_reviews:int,review_scores_rating:int,instant_bookable:chararray,reviews_per_month:float);
+
+filterdata = Filter data By room_type == 'Entire home/apt' OR room_type == 'Private room' OR room_type == 'Shared room';
+
+grp = Group filterdata By room_type;
+
+countdata = Foreach grp Generate group, AVG(filterdata.price) As average;
+
+
+A2:
+
+data = load '/home/nd/Downloads/cleanNew.csv' Using PigStorage(',') As
+(id:chararray,host_id:chararray,host_since:chararray,host_name:chararray,host_response_rate:chararray,host_acceptance_rate:chararray,neighbourhood_cleansed:chararray,city:chararray,state:chararray,zipcode:chararray,country:chararray,latitude:chararray,longitude:chararray,property_type:chararray,room_type:chararray,accommodates:int,bathrooms:int,bedrooms:int,beds:int,price:int,cancellation_policy:chararray,weekly_price:int,monthly_price:int,security_deposit:int,cleaning_fee:int,number_of_reviews:int,review_scores_rating:int,instant_bookable:chararray,reviews_per_month:float);
+
+grp = Group data By property_type;
+
+countdata = Foreach grp Generate group, AVG(data.price) As average;
+
+
+A3:
+
+data = load '/home/nd/Downloads/cleanNew.csv' Using PigStorage(',') As
+(id:chararray,host_id:chararray,host_since:chararray,host_name:chararray,host_response_rate:chararray,host_acceptance_rate:chararray,neighbourhood_cleansed:chararray,city:chararray,state:chararray,zipcode:chararray,country:chararray,latitude:chararray,longitude:chararray,property_type:chararray,room_type:chararray,accommodates:int,bathrooms:int,bedrooms:int,beds:int,price:int,cancellation_policy:chararray,weekly_price:int,monthly_price:int,security_deposit:int,cleaning_fee:int,number_of_reviews:int,review_scores_rating:int,instant_bookable:chararray,reviews_per_month:float);
+
+filter1 = filter data by beds <= 4;
+
+grp = Group filter1 By (beds,neighbourhood_cleansed);
+
+countdata = Foreach grp Generate group,AVG(filter1.price) as average;
+
+
+A4:
+
+data = load '/home/nd/Downloads/cleanNew.csv' Using PigStorage(',') As
+(id:chararray,host_id:chararray,host_since:chararray,host_name:chararray,host_response_rate:chararray,host_acceptance_rate:chararray,neighbourhood_cleansed:chararray,city:chararray,state:chararray,zipcode:chararray,country:chararray,latitude:chararray,longitude:chararray,property_type:chararray,room_type:chararray,accommodates:int,bathrooms:int,bedrooms:int,beds:int,price:int,cancellation_policy:chararray,weekly_price:int,monthly_price:int,security_deposit:int,cleaning_fee:int,number_of_reviews:int,review_scores_rating:int,instant_bookable:chararray,reviews_per_month:float);
+
+dateData = FOREACH data Generate ToDate(host_since,'MM/dd/yyyy') As (hostSince:DateTime), price as price;
+
+yearMonth = FOREACH dateData GENERATE GetYear(hostSince) As Year, GetMonth(hostSince) As Month;
+
+grp = GROUP yearMonth by (Year,Month);
+
+countdata = FOREACH grp GENERATE group, COUNT(yearMonth);
+
+G
+A5:
+
+data = load '/home/nd/Downloads/cleanNew.csv' Using PigStorage(',') As
+(id:chararray,host_id:chararray,host_since:chararray,host_name:chararray,host_response_rate:chararray,host_acceptance_rate:chararray,neighbourhood_cleansed:chararray,city:chararray,state:chararray,zipcode:chararray,country:chararray,latitude:chararray,longitude:chararray,property_type:chararray,room_type:chararray,accommodates:int,bathrooms:int,bedrooms:int,beds:int,price:int,cancellation_policy:chararray,weekly_price:int,monthly_price:int,security_deposit:int,cleaning_fee:int,number_of_reviews:int,review_scores_rating:int,instant_bookable:chararray,reviews_per_month:float);
+
+filternull = filter data by latitude != '';
+
+grp  = Group filternull by (latitude,longitude);
+
+countdata = Foreach grp Generate group,filternull.room_type as room_type;
+
+
+A6:
+
+data = load '/home/nd/Downloads/cleanNew.csv' Using PigStorage(',') As
+(id:chararray,host_id:chararray,host_since:chararray,host_name:chararray,host_response_rate:chararray,host_acceptance_rate:chararray,neighbourhood_cleansed:chararray,city:chararray,state:chararray,zipcode:chararray,country:chararray,latitude:chararray,longitude:chararray,property_type:chararray,room_type:chararray,accommodates:int,bathrooms:int,bedrooms:int,beds:int,price:int,cancellation_policy:chararray,weekly_price:int,monthly_price:int,security_deposit:int,cleaning_fee:int,number_of_reviews:int,review_scores_rating:int,instant_bookable:chararray,reviews_per_month:float);
+
+grp = Group data By neighbourhood_cleansed;
+
+countdata = Foreach grp Generate group, COUNT(data),AVG(data.price) as average;
+
+
+A7:
+
+data = load '/home/nd/Downloads/reviewsForBookingCount.csv' Using PigStorage(',') As
+(listing_id:chararray,id:chararray,date:chararray,reviewer_id:chararray);
+
+grp = Group data by listing_id;
+
+countbooking = Foreach grp Generate group, COUNT(data);
+
+STORE countbooking into '/home/nd/Downloads/countBookings/' using PigStorage(',');
+
+cancellation_policy = Foreach data generate id as id, cancellation_policy as cancellation_policy;
+
+data = load '/home/nd/Downloads/countBookings/part-r-00000' Using PigStorage(',') As (id:chararray,count:int);
+
+joindata = JOIN cancellation_policy by id, data by id;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
